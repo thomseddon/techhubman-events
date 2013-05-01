@@ -1,36 +1,52 @@
 var express = require('express'),
 	jsdom = require('jsdom');
 
-var serve = function (list) {
+var list = [],
+	timeout = 60 * 60 * 1000; // An hour in ms
 
-	var app = express();
+var refresh = function () {
+	console.log('refreshing...');
+	var start = new Date();
 
-	app.get('/', function (req, res) {
-		res.jsonp(list);
+	jsdom.env({
+		html: 'http://manchester.techhub.com/events/',
+		scripts: ["http://code.jquery.com/jquery.js"],
+		done: function (errors, window) {
+			var $ = window.$,
+				newList = [];
+
+			$('article.card.article.span6.event').each(function () {
+				var $this = $(this);
+				newList.push({
+					name: $this.find('.event_title a').html(),
+					venue: $this.find('.event_venue').html(),
+					description: $this.find('.event_description p').last().html().replace(/\n/g, ' ')
+				});
+			});
+
+			// Atomic update
+			list = newList;
+
+			console.log('refresh done, took', ((+new Date() - +start) / 1000) + ' secs');
+		}
 	});
-
-	var port = process.env.PORT || 3000;
-	app.listen(port);
-	console.log('serving on ' + port);
 };
 
-jsdom.env({
-	html: 'http://manchester.techhub.com/events/',
-	scripts: ["http://code.jquery.com/jquery.js"],
-	done: function (errors, window) {
-		console.log('processing....');
+// Serve
+var app = express();
 
-		var $ = window.$;
+app.get('/', function (req, res) {
+	// You get stale data by default (waiting for new data is too slow)
+	res.jsonp(list);
+});
 
-		var list = [];
-		$('article.card.article.span6.event').each(function () {
-			list.push({
-				name: $(this).find('.event_title a').html(),
-				venue: $(this).find('.event_venue').html(),
-				description: $(this).find('.event_description p').last().html().replace(/\n/g, ' ')
-			});
-		});
 
-		serve(list);
-	}
+app.listen(process.env.PORT || 3000, function () {
+	console.log('serving on http://127.0.0.1:' + this.address().port);
+
+	// Schedule background updating every hour
+	setTimeout(refresh, timeout);
+
+	// Run one now to kick things off
+	refresh();
 });
