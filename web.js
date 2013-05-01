@@ -1,9 +1,9 @@
 var express = require('express'),
 	jsdom = require('jsdom');
 
-var app = express();
-
 var serve = function (list) {
+
+	var app = express();
 
 	app.get('/', function (req, res) {
 		res.jsonp(list);
