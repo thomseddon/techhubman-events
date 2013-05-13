@@ -1,8 +1,34 @@
 var express = require('express'),
-	jsdom = require('jsdom');
+	jsdom = require('jsdom'),
+	rss = require('rss');
 
 var list = [],
+	feed = '',
 	timeout = 60 * 60 * 1000; // An hour in ms
+
+var update = function (newList) {
+	// Atomic update
+	list = newList;
+
+	var newFeed = new rss({
+		title: 'TechHub Manchester Events',
+		description: 'TechHub Manchester Events',
+		feed_url: 'http://techhubmanevents.herokuapp.com/rss',
+		site_url: 'http://manchester.techhub.com/events',
+		author: 'TechHub Manchester'
+	});
+
+	list.forEach(function (item) {
+		newFeed.item({
+			title: item.title,
+			description: item.description,
+			url: item.url,
+			date: item.date
+		});
+	});
+
+	feed = newFeed.xml();
+};
 
 var refresh = function () {
 	console.log('refreshing...');
@@ -13,19 +39,22 @@ var refresh = function () {
 		scripts: ["http://code.jquery.com/jquery.js"],
 		done: function (errors, window) {
 			var $ = window.$,
-				newList = [];
+				list = [];
 
 			$('article.card.article.span6.event').each(function () {
 				var $this = $(this);
-				newList.push({
-					name: $this.find('.event_title a').html(),
+				list.push({
+					title: $this.find('.event_title a').html(),
 					venue: $this.find('.event_venue').html(),
-					description: $this.find('.event_description p').last().html().replace(/\n/g, ' ')
+					description: $this.find('.event_description p').last().html().replace(/\n/g, ' '),
+					url: 'http://manchester.techhub.com' + $this.find('.event_title a').attr('href'),
+					date: new Date($this.find('.event_date .day').html() + ' ' +
+						$this.find('.event_date .month').html() + ' 2013'), // TODO future proof
 				});
 			});
 
 			// Atomic update
-			list = newList;
+			update(list);
 
 			console.log('refresh done, took', ((+new Date() - +start) / 1000) + ' secs');
 		}
@@ -36,8 +65,16 @@ var refresh = function () {
 var app = express();
 
 app.get('/', function (req, res) {
-	// You get stale data by default (waiting for new data is too slow)
+	res.send('<h1>TechHub Manchester Events as: <a href="/json">JSON</a> and <a href="/rss">RSS</a></h1>');
+});
+
+app.get('/json', function (req, res) {
 	res.jsonp(list);
+});
+
+app.get('/rss', function (req, res) {
+	res.setHeader('application/rss+xml');
+	res.send(feed);
 });
 
 
