@@ -73,7 +73,7 @@ app.get('/json', function (req, res) {
 });
 
 app.get('/rss', function (req, res) {
-	res.setHeader('application/rss+xml');
+	res.setHeader('Content-Type', 'application/rss+xml');
 	res.send(feed);
 });
 
