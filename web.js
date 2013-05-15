@@ -77,12 +77,11 @@ app.get('/rss', function (req, res) {
 	res.send(feed);
 });
 
-
 app.listen(process.env.PORT || 3000, function () {
 	console.log('serving on http://127.0.0.1:' + this.address().port);
 
 	// Schedule background updating every hour
-	setTimeout(refresh, timeout);
+	setInterval(refresh, timeout);
 
 	// Run one now to kick things off
 	refresh();
