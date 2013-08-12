@@ -41,15 +41,15 @@ var refresh = function () {
 			var $ = window.$,
 				list = [];
 
-			$('article.card.article.span6.event').each(function () {
-				var $this = $(this);
+			$('.card.span6').each(function () {
+				var $this = $(this),
+					title = $this.find('h2.title a');
 				list.push({
-					title: $this.find('.event_title a').html(),
-					venue: $this.find('.event_venue').html(),
-					description: $this.find('.event_description p').last().html().replace(/\n/g, ' '),
-					url: 'http://manchester.techhub.com' + $this.find('.event_title a').attr('href'),
-					date: new Date($this.find('.event_date .day').html() + ' ' +
-						$this.find('.event_date .month').html() + ' 2013'), // TODO future proof
+					title: title.html(),
+					venue: $this.find('.event_meta').html().replace(/^\d+:\d+(a|p)m,\s+/, ''),
+					description: $.trim($this.find('.excerpt').last().html().replace(/\n/g, ' ')),
+					url: title.attr('href'),
+					date: new Date($this.find('time.datestamp').attr('datetime'))
 				});
 			});
 
