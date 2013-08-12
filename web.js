@@ -1,10 +1,12 @@
 var express = require('express'),
 	cheerio = require('cheerio'),
 	request = require('request'),
-	rss = require('rss');
+	rss = require('rss'),
+	ical = require('ical-generator');
 
 var list = [],
 	feed = '',
+	icalFeed = false,
 	timeout = 60 * 60 * 1000; // An hour in ms
 
 var update = function (newList) {
@@ -19,6 +21,9 @@ var update = function (newList) {
 		author: 'TechHub Manchester'
 	});
 
+	var newIcalFeed = ical();
+	newIcalFeed.setDomain('http://techhubmanevents.herokuapp.com/ical');
+
 	list.forEach(function (item) {
 		newFeed.item({
 			title: item.title,
@@ -26,9 +31,18 @@ var update = function (newList) {
 			url: item.url,
 			date: item.date
 		});
+
+		newIcalFeed.addEvent({
+			summary: item.title,
+			description: item.description,
+			url: item.url,
+			start: item.date,
+			end: new Date(+item.date + 3600000)
+		});
 	});
 
 	feed = newFeed.xml();
+	icalFeed = newIcalFeed;
 };
 
 var refresh = function () {
@@ -62,7 +76,7 @@ var refresh = function () {
 var app = express();
 
 app.get('/', function (req, res) {
-	res.send('<h1>TechHub Manchester Events as: <a href="/json">JSON</a> and <a href="/rss">RSS</a></h1>');
+	res.send('<h1>TechHub Manchester Events as: <a href="/json">JSON</a>, <a href="/rss">RSS</a> and <a href="/ical">iCal</a></h1>');
 });
 
 app.get('/json', function (req, res) {
@@ -72,6 +86,11 @@ app.get('/json', function (req, res) {
 app.get('/rss', function (req, res) {
 	res.setHeader('Content-Type', 'application/rss+xml');
 	res.send(feed);
+});
+
+app.get('/ical', function (req, res) {
+	if (!icalFeed) return res.send('waiting...');
+	icalFeed.serve(res);
 });
 
 app.listen(process.env.PORT || 3000, function () {

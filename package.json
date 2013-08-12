@@ -5,7 +5,8 @@
     "express": "~3.3.5",
     "cheerio": "~0.12.1",
     "request": "~2.26.0",
-    "rss": "~0.2.0"
+    "rss": "~0.2.0",
+    "ical-generator": "~0.1.1"
   },
   "engines": {
     "node": "0.10.x",
