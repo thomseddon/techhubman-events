@@ -1,10 +1,11 @@
 {
-  "name": "daveandthom",
+  "name": "techhubmanevents",
   "version": "0.0.1",
   "dependencies": {
     "express": "3.1.x",
-    "jsdom": "0.6.0",
-    "rss": "0.0.x"
+    "rss": "0.0.x",
+    "cheerio": "~0.12.1",
+    "request": "~2.26.0"
   },
   "engines": {
     "node": "0.10.x",

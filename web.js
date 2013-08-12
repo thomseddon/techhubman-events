@@ -1,5 +1,6 @@
 var express = require('express'),
-	jsdom = require('jsdom'),
+	cheerio = require('cheerio'),
+	request = require('request'),
 	rss = require('rss');
 
 var list = [],
@@ -34,30 +35,26 @@ var refresh = function () {
 	console.log('refreshing...');
 	var start = new Date();
 
-	jsdom.env({
-		html: 'http://manchester.techhub.com/events/',
-		scripts: ["http://code.jquery.com/jquery.js"],
-		done: function (errors, window) {
-			var $ = window.$,
-				list = [];
+	request('http://manchester.techhub.com/events/', function (err, res, body) {
+		var $ = cheerio.load(body),
+			list = [];
 
-			$('.card.span6').each(function () {
-				var $this = $(this),
-					title = $this.find('h2.title a');
-				list.push({
-					title: title.html(),
-					venue: $this.find('.event_meta').html().replace(/^\d+:\d+(a|p)m,\s+/, ''),
-					description: $.trim($this.find('.excerpt').last().html().replace(/\n/g, ' ')),
-					url: title.attr('href'),
-					date: new Date($this.find('time.datestamp').attr('datetime'))
-				});
+		$('.card.span6').each(function () {
+			var $this = $(this),
+				title = $this.find('h2.title a');
+			list.push({
+				title: title.html(),
+				venue: $this.find('.event_meta').html().replace(/^\d+:\d+(a|p)m,\s+/, ''),
+				description: $this.find('.excerpt').last().html().replace(/\n/g, ' ').replace(/^\s+|\s+$/g, ''),
+				url: title.attr('href'),
+				date: new Date($this.find('time.datestamp').attr('datetime'))
 			});
+		});
 
-			// Atomic update
-			update(list);
+		// Atomic update
+		update(list);
 
-			console.log('refresh done, took', ((+new Date() - +start) / 1000) + ' secs');
-		}
+		console.log('refresh done, took', ((+new Date() - +start) / 1000) + ' secs');
 	});
 };
 
